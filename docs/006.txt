@@ -1,0 +1,107 @@
+<h1>日常啰嗦</h1>
+上一篇文章《Spring+SpringMVC+MyBatis+easyUI整合基础篇（十）SVN搭建》简单的讲了一下SVN服务器的搭建，并没有详细的介绍配置文件及一些复杂的功能，所以本文算是对上一篇文章的补充。
+
+项目实际效果展示在这里，账密：admin 123456
+下载地址，点这里
+github地址，在这里
+
+配置文件详解
+svnserve.conf
+
+svn服务配置文件，做权限配置及基本的关联设置
+
+[general]
+anon-access = none #非授权用户无法访问
+
+auth-access = write #授权用户有读写权限(设置为read时为只读) 
+
+password-db = passwd #密码数据文件(此时为当前conf目录下的passwd文件，也可以设置为绝对路径，如'/opt/svnconf/passwd')
+
+authz-db = authz    #权限设置文件(此时为当前conf目录下的authz文件，也可以设置为绝对路径，如'/opt/svnconf/authz'，如果未指定路径，则无访问控制)
+
+# 这两个选项用来指定加密强度的（自行设置）
+# min-encryption = 0
+# max-encryption = 256
+passwd
+用来设置用户名和密码的，格式为 用户名 = 密码
+
+[users]
+ssm1 = 123456(用户名ssm1密码为123456)
+ssm2 = 567890
+authz
+用户权限配置
+
+[ssm-demo:/]    #表示ssm-demo仓库下的所有文件
+ssm1 = rw       #ssm1用户具有读写权限
+ssm2 = r        #ssm2用户具有读权限
+[ssm-demo:/code/trunk/aaa]    #表示ssm-demo仓库下的/code/trunk/aaa目录
+ssm1 = r        #ssm1用户具有读权限
+ssm2 = r        #ssm2用户具有读权限
+权限设置
+上面只是对authz文件做了简单的介绍及简单的用户权限配置，还有复杂的权限设置需要注意，比如有管理组admin及开发组A和开发组B，对应的开发项目为qq和weixin，这三组人员对应的项目权限肯定不一样，设置如下：
+首先在passwd文件中设置全部人员
+
+[users]
+zhao = 123456(用户名ssm1密码为123456)
+qian = 123456
+sun = 567890
+li = 123456
+zhou = 123456
+wu = 567890
+zheng = 567890
+然后在authz文件中设置权限
+
+[group]             #设置分组(用户zheng未分组)
+admin = zhao,qian   #管理员zhao和qian
+group_a = sun,li    #A开发组sun和li
+group_b = zhou,wu   #B开发组zhou和wu
+
+[qq:/]              #表示qq项目仓库下的所有文件
+@group_a = rw       #开发组A有读写权限
+@admin=rw           #admin有读写权限 
+* =                 #其他用户无权限(此时的其他用户就包括未分组的zheng及已经分组的group_b组中所有成员)
+
+[weixin:/]          #表示weixin项目仓库下的所有文件
+@group_b = rw       #开发组A有读写权限
+@admin=rw           #admin有读写权限 
+* =                 #其他用户无权限(此时的其他用户就包括未分组的zheng及已经分组的group_a组中所有成员)
+补充
+
+比如，qq项目下又有qq空间和qq邮箱，对这两个目录再进行权限分配
+
+[group]                 #分组
+admin = zhao,qian       #管理员zhao和qian
+group_a = sun,li        #A开发组sun和li
+group_b = zhou,wu       #B开发组zhou和wu
+g_a_zone = ma           #新增qq空间组及成员ma
+g_a_mail = zhang        #新增qq邮箱组及成员zhang
+
+[qq:/zone]              #表示qq项目的qq空间目录
+@g_a_zone = rw          #开发组g_a_zone有读写权限
+@admin=rw               #admin有读写权限
+@group_a = rw           #开发组A有读写权限 
+* =                     #其他用户无权限
+
+[qq:/mail]              #表示qq项目的mail空间目录
+@g_a_mail = rw          #开发组g_a_mail有读写权限
+@admin=rw               #admin有读写权限 
+@group_b = rw           #开发组A有读写权限
+* =                     #其他用户无权限
+用户某个目录的权限是向子目录递归的。
+
+多版本库
+如果想两个项目分别进行开发，且拥有独立的开发人员，可以创建多个版本仓库，服务器中已经有ssm-demo仓库，我们再新建一个ssm-maven仓库。命令如下：
+
+mkdir /opt/svn/ssm-maven
+svnadmin create /opt/svn/ssm-maven
+分别设置ssm-maven目录conf配置文件夹下的配置文件，重启svn服务即可，此时就有两个仓库了。
+
+删除版本库
+rm -rf ssm-demo #谨慎使用 rm -rf 命令
+有问题可以留言。
+
+
+作者： 涵s 
+链接：https://www.imooc.com/article/17351
+来源：慕课网
+本文原创发布于慕课网 ，转载请注明出处，谢谢合作
